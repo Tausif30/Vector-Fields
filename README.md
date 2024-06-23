@@ -6,12 +6,22 @@
   <li>Has user friendly tools for moving zooming and rotating the plots.</li>
   <li>Can save pictures of the plots.</li>
 </ul>
-<p>Preview:</p>
-![I1](https://github.com/Tausif30/Vector-Fields/assets/67776416/016faf7e-51df-404b-b6f1-d7be02e582e9)
-<p>3D Cartesian Plot.</p>
-![I2](https://github.com/Tausif30/Vector-Fields/assets/67776416/32a68e3d-02ef-49ca-aa47-fd43e10954b4)
-<p>Same Plot in the XY Plane.</p>
-![I3](https://github.com/Tausif30/Vector-Fields/assets/67776416/0e8a844a-239a-4aa6-83f7-bc7c3250c2f4)
-<p>Plot in Spherical Coordinate.</p>
-![I4](https://github.com/Tausif30/Vector-Fields/assets/67776416/e0c8abf7-8ecc-4bbf-bdc9-7a9aa078cdde)
-<p>Zoomed in View of the Plot.</p>
+<h3>Preview:</h3>
+<h4>
+  
+![I1](https://github.com/Tausif30/Vector-Fields/assets/67776416/414007dc-5f83-4b8b-b995-03484c32c64f)
+<br><br>
+    3D Cartesian Plot.
+<br><br>
+![I2](https://github.com/Tausif30/Vector-Fields/assets/67776416/b674b178-b79a-43ac-adef-f6b7bce714ce)
+<br><br>
+    Same Plot in the XY Plane.
+<br><br>
+![I3](https://github.com/Tausif30/Vector-Fields/assets/67776416/1a970d61-d41a-41d5-8335-0cf355b90d9a)
+<br><br>
+    Plot in Spherical Coordinate.
+<br><br>
+![I4](https://github.com/Tausif30/Vector-Fields/assets/67776416/6cbecaf6-e973-4612-8ca0-1c5e389073de)
+<br><br>
+    Zoomed in View of the Plot.
+</h4>
