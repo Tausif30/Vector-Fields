@@ -7,11 +7,11 @@
   <li>Can save pictures of the plots.</li>
 </ul>
 <p>Preview:</p>
-![image](https://github.com/Tausif30/Vector-Fields/assets/67776416/016faf7e-51df-404b-b6f1-d7be02e582e9)
+![I1](https://github.com/Tausif30/Vector-Fields/assets/67776416/016faf7e-51df-404b-b6f1-d7be02e582e9)
 <p>3D Cartesian Plot.</p>
-![image](https://github.com/Tausif30/Vector-Fields/assets/67776416/32a68e3d-02ef-49ca-aa47-fd43e10954b4)
+![I2](https://github.com/Tausif30/Vector-Fields/assets/67776416/32a68e3d-02ef-49ca-aa47-fd43e10954b4)
 <p>Same Plot in the XY Plane.</p>
-![image](https://github.com/Tausif30/Vector-Fields/assets/67776416/0e8a844a-239a-4aa6-83f7-bc7c3250c2f4)
+![I3](https://github.com/Tausif30/Vector-Fields/assets/67776416/0e8a844a-239a-4aa6-83f7-bc7c3250c2f4)
 <p>Plot in Spherical Coordinate.</p>
-![image](https://github.com/Tausif30/Vector-Fields/assets/67776416/e0c8abf7-8ecc-4bbf-bdc9-7a9aa078cdde)
+![I4](https://github.com/Tausif30/Vector-Fields/assets/67776416/e0c8abf7-8ecc-4bbf-bdc9-7a9aa078cdde)
 <p>Zoomed in View of the Plot.</p>
