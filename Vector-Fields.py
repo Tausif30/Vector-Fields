@@ -9,7 +9,21 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
 from PyQt5.QtGui import QIcon
+
+epsilon = 1e-5
+def safe_normalize(U, V, W=None):
+    if W is None:  # 2D case
+        norm = np.sqrt(U ** 2 + V ** 2)
+        # Add a small epsilon to avoid division by zero
+        norm = np.where(norm < 1e-2, 1e-2, norm)
+        return U / norm, V / norm
+    else:  # 3D case
+        norm = np.sqrt(U ** 2 + V ** 2 + W ** 2) + epsilon
+        # Add a small epsilon to avoid division by zero
+        norm = np.where(norm < 1e-2, 1e-2, norm)
+        return U / norm, V / norm, W / norm
 
 class VectorFieldVisualizer(QMainWindow):
     def __init__(self):
@@ -261,21 +275,40 @@ class VectorFieldVisualizer(QMainWindow):
 
         if plot_type == "3D":
             ax = self.figure.add_subplot(111, projection='3d')
+            is_3D = True
         else:
             ax = self.figure.add_subplot(111)
+            is_3D = False
+
 
         if coord_system == "Cartesian":
             self.plot_cartesian(ax, vector_field, plot_type)
         elif coord_system == "Cylindrical":
             self.plot_cylindrical(ax, vector_field, plot_type)
         else:  # Spherical
-            self.plot_spherical(ax, vector_field)
+            self.plot_spherical(ax, vector_field, plot_type)
+
+        if is_3D:
+            # Apply tight layout for 3D plots
+            self.figure.tight_layout()
+        else:
+            # For 2D plots, use the full space and ensure grid lines are visible
+            ax.set_position([0.1, 0.1, 0.85, 0.85])  # Adjust these values as needed
+            ax.grid(True)
 
         self.canvas.draw()
+
 
     def plot_cartesian(self, ax, vector_field, plot_type):
         x, y, z = sp.symbols('x y z')
         Fx, Fy, Fz = sp.sympify(vector_field)
+        Fx = Fx.subs({x: x + 1e-5, y: y + 1e-6, z: z + 1e-7})
+        Fy = Fy.subs({x: x + 1e-5, y: y + 1e-6, z: z + 1e-7})
+        Fz = Fz.subs({x: x + 1e-5, y: y + 1e-6, z: z + 1e-7})
+
+        title = f"Vector Field: ({Fx}, {Fy}, {Fz})"
+        if plot_type != "3D":
+            ax.set_aspect('equal', adjustable='box')
 
         if plot_type == "3D":
             X, Y, Z = np.meshgrid(np.linspace(-10, 10, 8),
@@ -286,7 +319,10 @@ class VectorFieldVisualizer(QMainWindow):
             V = sp.lambdify((x, y, z), Fy)(X, Y, Z)
             W = sp.lambdify((x, y, z), Fz)(X, Y, Z)
 
-            ax.quiver(X, Y, Z, U, V, W, length=1.0, normalize=True, linewidth=2)
+            norm = np.sqrt(U**2 + V**2 + W**2)
+            U, V, W = safe_normalize(U, V, W)
+
+            ax.quiver(X, Y, Z, U, V, W, length=1, normalize=False, linewidth=2)
             ax.set_xlabel('X')
             ax.set_ylabel('Y')
             ax.set_zlabel('Z')
@@ -297,33 +333,49 @@ class VectorFieldVisualizer(QMainWindow):
             X, Y = np.meshgrid(np.linspace(-10, 10, 20), np.linspace(-10, 10, 20))
             U = sp.lambdify((x, y), Fx.subs(z, 0))(X, Y)
             V = sp.lambdify((x, y), Fy.subs(z, 0))(X, Y)
+            norm = np.sqrt(U**2 + V**2)
+            U, V = safe_normalize(U, V)
             ax.quiver(X, Y, U, V)
             ax.set_xlabel('X')
             ax.set_ylabel('Y')
             ax.set_xlim(-10, 10)
             ax.set_ylim(-10, 10)
+
         elif plot_type == "YZ":
             Y, Z = np.meshgrid(np.linspace(-10, 10, 20), np.linspace(-10, 10, 20))
             V = sp.lambdify((y, z), Fy.subs(x, 0))(Y, Z)
             W = sp.lambdify((y, z), Fz.subs(x, 0))(Y, Z)
+            norm = np.sqrt(V**2 + W**2)
+            V, W = safe_normalize(V, W)
             ax.quiver(Y, Z, V, W)
             ax.set_xlabel('Y')
             ax.set_ylabel('Z')
             ax.set_xlim(-10, 10)
             ax.set_ylim(-10, 10)
+
         elif plot_type == "XZ":
             X, Z = np.meshgrid(np.linspace(-10, 10, 20), np.linspace(-10, 10, 20))
             U = sp.lambdify((x, z), Fx.subs(y, 0))(X, Z)
             W = sp.lambdify((x, z), Fz.subs(y, 0))(X, Z)
+            U, W = safe_normalize(U, W)
             ax.quiver(X, Z, U, W)
             ax.set_xlabel('X')
             ax.set_ylabel('Z')
             ax.set_xlim(-10, 10)
             ax.set_ylim(-10, 10)
 
+
     def plot_cylindrical(self, ax, vector_field, plot_type):
         r, theta, z = sp.symbols('r theta z')
         Fr, Ftheta, Fz = sp.sympify(vector_field)
+        Fr = Fr.subs({r: r + 1e-5, z: z + 1e-6})
+        Ftheta = Ftheta.subs({r: r + 1e-5, z: z + 1e-6})
+        Fz = Fz.subs({r: r + 1e-6, z: z + 1e-6})
+
+        title = f"Vector Field: ({Fr}, {Ftheta}, {Fz})"
+
+        if plot_type != "3D":
+            ax.set_aspect('equal', adjustable='box')
 
         if plot_type == "3D":
             R, THETA, Z = np.meshgrid(np.linspace(0, 10, 8),
@@ -338,13 +390,18 @@ class VectorFieldVisualizer(QMainWindow):
                 sp.lambdify((r, theta, z), Ftheta)(R, THETA, Z) * np.cos(THETA)
             W = sp.lambdify((r, theta, z), Fz)(R, THETA, Z)
 
-            ax.quiver(X, Y, Z, U, V, W, length=1.0, normalize=True, linewidth=2)
+
+            norm = np.sqrt(U ** 2 + V ** 2 + W ** 2)
+            U, V, W = [np.nan_to_num(component / norm, nan=0.0, posinf=0.0, neginf=0.0)
+                       for component in (U, V, W)]
+
+            ax.quiver(X, Y, Z, U, V, W, length=0.5, normalize=False, linewidth=1)
             ax.set_xlabel('X')
             ax.set_ylabel('Y')
             ax.set_zlabel('Z')
-            ax.set_xlim(-10, 10)
-            ax.set_ylim(-10, 10)
-            ax.set_zlim(-10, 10)
+            ax.set_xlim(-10, 10,)
+            ax.set_ylim(-10, 10,)
+            ax.set_zlim(-10, 10,)
         elif plot_type == "Rθ":
             R, THETA = np.meshgrid(np.linspace(0, 10, 20), np.linspace(0, 2 * np.pi, 20))
             X = R * np.cos(THETA)
@@ -353,15 +410,22 @@ class VectorFieldVisualizer(QMainWindow):
                 sp.lambdify((r, theta), Ftheta.subs(z, 0))(R, THETA) * np.sin(THETA)
             V = sp.lambdify((r, theta), Fr.subs(z, 0))(R, THETA) * np.sin(THETA) + \
                 sp.lambdify((r, theta), Ftheta.subs(z, 0))(R, THETA) * np.cos(THETA)
-            ax.quiver(X, Y, U, V)
+
+            norm = np.sqrt(U**2 + V**2)
+            U, V = safe_normalize(U, V)
+
+            ax.quiver(X, Y, U, V, normalize=False)
             ax.set_xlabel('X')
             ax.set_ylabel('Y')
-            ax.set_xlim(-10, 10)
-            ax.set_ylim(-10, 10)
+            ax.set_xlim(-10, 10,)
+            ax.set_ylim(-10, 10,)
 
-    def plot_spherical(self, ax, vector_field):
+
+    def plot_spherical(self, ax, vector_field, plot_type):
         r, theta, phi = sp.symbols('r theta phi')
         Fr, Ftheta, Fphi = sp.sympify(vector_field)
+
+        title = f"Vector Field: ({Fr}, {Ftheta}, {Fphi})"
 
         R, THETA, PHI = np.meshgrid(np.linspace(0, 10, 8),
                                     np.linspace(0, np.pi, 8),
@@ -380,13 +444,17 @@ class VectorFieldVisualizer(QMainWindow):
         W = sp.lambdify((r, theta, phi), Fr)(R, THETA, PHI) * np.cos(THETA) - \
             sp.lambdify((r, theta, phi), Ftheta)(R, THETA, PHI) * np.sin(THETA)
 
-        ax.quiver(X, Y, Z, U, V, W, length=1.0, normalize=True, linewidth=2)
+        norm = np.sqrt(U**2 + V**2 + W**2)
+        U, V, W = safe_normalize(U, V, W)
+
+        ax.quiver(X, Y, Z, U, V, W, length=0.5, normalize=False, linewidth=1)
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
-        ax.set_xlim(-10, 10)
-        ax.set_ylim(-10, 10)
-        ax.set_zlim(-10, 10)
+        ax.set_xlim(-10, 10,)
+        ax.set_ylim(-10, 10,)
+        ax.set_zlim(-10, 10,)
+
 
     def save_plot(self):
         if (self.current_mode == 'move'):
