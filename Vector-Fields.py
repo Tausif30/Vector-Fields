@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 from PyQt5.QtGui import QIcon
 
 epsilon = 1e-5
+
+
 def safe_normalize(U, V, W=None):
     if W is None:  # 2D case
         norm = np.sqrt(U ** 2 + V ** 2)
@@ -24,6 +26,7 @@ def safe_normalize(U, V, W=None):
         # Add a small epsilon to avoid division by zero
         norm = np.where(norm < 1e-2, 1e-2, norm)
         return U / norm, V / norm, W / norm
+
 
 class VectorFieldVisualizer(QMainWindow):
     def __init__(self):
@@ -49,7 +52,8 @@ class VectorFieldVisualizer(QMainWindow):
         coord_label.setStyleSheet("font-size: 20px;")
         self.coord_combo = QComboBox()
         self.coord_combo.addItems(["Cartesian", "Cylindrical", "Spherical"])
-        self.coord_combo.setStyleSheet("font-size: 20px; padding: 5px 15px 5px 15px; margin-bottom: 12px; border-radius: 18px; outline: none;")
+        self.coord_combo.setStyleSheet(
+            "font-size: 20px; padding: 5px 15px 5px 15px; margin-bottom: 12px; border-radius: 18px; outline: none;")
         self.coord_combo.currentIndexChanged.connect(self.update_input_fields)
 
         # Vector field input
@@ -176,7 +180,7 @@ class VectorFieldVisualizer(QMainWindow):
             border-left-color: whitesmoke;
             border-left-style: solid;
         }
-        
+
         QComboBox::down-arrow {
             width: 15px;
             height: 15px;
@@ -219,11 +223,11 @@ class VectorFieldVisualizer(QMainWindow):
             labels = ["Vx:", "Vy:", "Vz:"]
             placeholders = ["y", "-x", "z"]
         elif coord_system == "Cylindrical":
-            plot_types = ["3D", "Rθ"]
+            plot_types = ["3D", "Rθ", "RZ", "θZ"]
             labels = ["Vr:", "Vθ:", "Vz:"]
             placeholders = ["-r*sin(theta)", "r*cos(theta)", "z"]
         else:  # Spherical
-            plot_types = ["3D"]
+            plot_types = ["3D", "Rθ", "Rφ", "θφ"]
             labels = ["Vr:", "Vθ:", "Vφ:"]
             placeholders = ["r*sin(theta)*cos(phi)", "r*sin(theta)*sin(phi)", "r*cos(theta)"]
 
@@ -280,7 +284,6 @@ class VectorFieldVisualizer(QMainWindow):
             ax = self.figure.add_subplot(111)
             is_3D = False
 
-
         if coord_system == "Cartesian":
             self.plot_cartesian(ax, vector_field, plot_type)
         elif coord_system == "Cylindrical":
@@ -297,7 +300,6 @@ class VectorFieldVisualizer(QMainWindow):
             ax.grid(True)
 
         self.canvas.draw()
-
 
     def plot_cartesian(self, ax, vector_field, plot_type):
         x, y, z = sp.symbols('x y z')
@@ -319,7 +321,7 @@ class VectorFieldVisualizer(QMainWindow):
             V = sp.lambdify((x, y, z), Fy)(X, Y, Z)
             W = sp.lambdify((x, y, z), Fz)(X, Y, Z)
 
-            norm = np.sqrt(U**2 + V**2 + W**2)
+            norm = np.sqrt(U ** 2 + V ** 2 + W ** 2)
             U, V, W = safe_normalize(U, V, W)
 
             ax.quiver(X, Y, Z, U, V, W, length=1, normalize=False, linewidth=2)
@@ -333,7 +335,7 @@ class VectorFieldVisualizer(QMainWindow):
             X, Y = np.meshgrid(np.linspace(-10, 10, 20), np.linspace(-10, 10, 20))
             U = sp.lambdify((x, y), Fx.subs(z, 0))(X, Y)
             V = sp.lambdify((x, y), Fy.subs(z, 0))(X, Y)
-            norm = np.sqrt(U**2 + V**2)
+            norm = np.sqrt(U ** 2 + V ** 2)
             U, V = safe_normalize(U, V)
             ax.quiver(X, Y, U, V)
             ax.set_xlabel('X')
@@ -345,7 +347,7 @@ class VectorFieldVisualizer(QMainWindow):
             Y, Z = np.meshgrid(np.linspace(-10, 10, 20), np.linspace(-10, 10, 20))
             V = sp.lambdify((y, z), Fy.subs(x, 0))(Y, Z)
             W = sp.lambdify((y, z), Fz.subs(x, 0))(Y, Z)
-            norm = np.sqrt(V**2 + W**2)
+            norm = np.sqrt(V ** 2 + W ** 2)
             V, W = safe_normalize(V, W)
             ax.quiver(Y, Z, V, W)
             ax.set_xlabel('Y')
@@ -390,35 +392,46 @@ class VectorFieldVisualizer(QMainWindow):
                 sp.lambdify((r, theta, z), Ftheta)(R, THETA, Z) * np.cos(THETA)
             W = sp.lambdify((r, theta, z), Fz)(R, THETA, Z)
 
+            U, V, W = safe_normalize(U, V, W)
 
-            norm = np.sqrt(U ** 2 + V ** 2 + W ** 2)
-            U, V, W = [np.nan_to_num(component / norm, nan=0.0, posinf=0.0, neginf=0.0)
-                       for component in (U, V, W)]
-
-            ax.quiver(X, Y, Z, U, V, W, length=0.5, normalize=False, linewidth=1)
+            ax.quiver(X, Y, Z, U, V, W, length=1, normalize=False, linewidth=2)
             ax.set_xlabel('X')
             ax.set_ylabel('Y')
             ax.set_zlabel('Z')
-            ax.set_xlim(-10, 10,)
-            ax.set_ylim(-10, 10,)
-            ax.set_zlim(-10, 10,)
+            ax.set_xlim(-10, 10)
+            ax.set_ylim(-10, 10)
+            ax.set_zlim(-10, 10)
         elif plot_type == "Rθ":
             R, THETA = np.meshgrid(np.linspace(0, 10, 20), np.linspace(0, 2 * np.pi, 20))
-            X = R * np.cos(THETA)
-            Y = R * np.sin(THETA)
-            U = sp.lambdify((r, theta), Fr.subs(z, 0))(R, THETA) * np.cos(THETA) - \
-                sp.lambdify((r, theta), Ftheta.subs(z, 0))(R, THETA) * np.sin(THETA)
-            V = sp.lambdify((r, theta), Fr.subs(z, 0))(R, THETA) * np.sin(THETA) + \
-                sp.lambdify((r, theta), Ftheta.subs(z, 0))(R, THETA) * np.cos(THETA)
-
-            norm = np.sqrt(U**2 + V**2)
+            U = sp.lambdify((r, theta), Fr.subs(z, 0))(R, THETA)
+            V = sp.lambdify((r, theta), Ftheta.subs(z, 0))(R, THETA)
             U, V = safe_normalize(U, V)
+            ax.quiver(R, THETA, U, V, angles='xy', scale_units='xy', scale=5)
+            ax.set_xlabel('R')
+            ax.set_ylabel('θ')
+            ax.set_xlim(0, 10)
+            ax.set_ylim(0, 2 * np.pi)
+        elif plot_type == "RZ":
+            R, Z = np.meshgrid(np.linspace(0, 10, 20), np.linspace(-10, 10, 20))
+            U = sp.lambdify((r, z), Fr.subs(theta, 0))(R, Z)
+            W = sp.lambdify((r, z), Fz.subs(theta, 0))(R, Z)
+            U, W = safe_normalize(U, W)
+            ax.quiver(R, Z, U, W)
+            ax.set_xlabel('R')
+            ax.set_ylabel('Z')
+            ax.set_xlim(0, 10)
+            ax.set_ylim(-10, 10)
+        elif plot_type == "θZ":
+            THETA, Z = np.meshgrid(np.linspace(0, 2 * np.pi, 20), np.linspace(-10, 10, 20))
+            V = sp.lambdify((theta, z), Ftheta.subs(r, 5))(THETA, Z)
+            W = sp.lambdify((theta, z), Fz.subs(r, 5))(THETA, Z)
+            V, W = safe_normalize(V, W)
+            ax.quiver(THETA, Z, V, W)
+            ax.set_xlabel('θ')
+            ax.set_ylabel('Z')
+            ax.set_xlim(0, 2 * np.pi)
+            ax.set_ylim(-10, 10)
 
-            ax.quiver(X, Y, U, V, normalize=False)
-            ax.set_xlabel('X')
-            ax.set_ylabel('Y')
-            ax.set_xlim(-10, 10,)
-            ax.set_ylim(-10, 10,)
 
 
     def plot_spherical(self, ax, vector_field, plot_type):
@@ -427,35 +440,68 @@ class VectorFieldVisualizer(QMainWindow):
 
         title = f"Vector Field: ({Fr}, {Ftheta}, {Fphi})"
 
-        R, THETA, PHI = np.meshgrid(np.linspace(0, 10, 8),
-                                    np.linspace(0, np.pi, 8),
-                                    np.linspace(0, 2 * np.pi, 16))
+        if plot_type != "3D":
+            ax.set_aspect('equal', adjustable='box')
 
-        X = R * np.sin(THETA) * np.cos(PHI)
-        Y = R * np.sin(THETA) * np.sin(PHI)
-        Z = R * np.cos(THETA)
+        if plot_type == "3D":
+            R, THETA, PHI = np.meshgrid(np.linspace(0, 10, 8),
+                                        np.linspace(0, np.pi, 8),
+                                        np.linspace(0, 2 * np.pi, 16))
 
-        U = sp.lambdify((r, theta, phi), Fr)(R, THETA, PHI) * np.sin(THETA) * np.cos(PHI) + \
-            sp.lambdify((r, theta, phi), Ftheta)(R, THETA, PHI) * np.cos(THETA) * np.cos(PHI) - \
-            sp.lambdify((r, theta, phi), Fphi)(R, THETA, PHI) * np.sin(PHI)
-        V = sp.lambdify((r, theta, phi), Fr)(R, THETA, PHI) * np.sin(THETA) * np.sin(PHI) + \
-            sp.lambdify((r, theta, phi), Ftheta)(R, THETA, PHI) * np.cos(THETA) * np.sin(PHI) + \
-            sp.lambdify((r, theta, phi), Fphi)(R, THETA, PHI) * np.cos(PHI)
-        W = sp.lambdify((r, theta, phi), Fr)(R, THETA, PHI) * np.cos(THETA) - \
-            sp.lambdify((r, theta, phi), Ftheta)(R, THETA, PHI) * np.sin(THETA)
+            X = R * np.sin(THETA) * np.cos(PHI)
+            Y = R * np.sin(THETA) * np.sin(PHI)
+            Z = R * np.cos(THETA)
 
-        norm = np.sqrt(U**2 + V**2 + W**2)
-        U, V, W = safe_normalize(U, V, W)
+            U = sp.lambdify((r, theta, phi), Fr)(R, THETA, PHI) * np.sin(THETA) * np.cos(PHI) + \
+                sp.lambdify((r, theta, phi), Ftheta)(R, THETA, PHI) * np.cos(THETA) * np.cos(PHI) - \
+                sp.lambdify((r, theta, phi), Fphi)(R, THETA, PHI) * np.sin(PHI)
+            V = sp.lambdify((r, theta, phi), Fr)(R, THETA, PHI) * np.sin(THETA) * np.sin(PHI) + \
+                sp.lambdify((r, theta, phi), Ftheta)(R, THETA, PHI) * np.cos(THETA) * np.sin(PHI) + \
+                sp.lambdify((r, theta, phi), Fphi)(R, THETA, PHI) * np.cos(PHI)
+            W = sp.lambdify((r, theta, phi), Fr)(R, THETA, PHI) * np.cos(THETA) - \
+                sp.lambdify((r, theta, phi), Ftheta)(R, THETA, PHI) * np.sin(THETA)
 
-        ax.quiver(X, Y, Z, U, V, W, length=0.5, normalize=False, linewidth=1)
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        ax.set_xlim(-10, 10,)
-        ax.set_ylim(-10, 10,)
-        ax.set_zlim(-10, 10,)
+            U, V, W = safe_normalize(U, V, W)
 
+            ax.quiver(X, Y, Z, U, V, W, length=1, normalize=False, linewidth=2)
+            ax.set_xlabel('X')
+            ax.set_ylabel('Y')
+            ax.set_zlabel('Z')
+            ax.set_xlim(-10, 10)
+            ax.set_ylim(-10, 10)
+            ax.set_zlim(-10, 10)
+        elif plot_type == "Rθ":
+            R, THETA = np.meshgrid(np.linspace(0, 10, 20), np.linspace(0, np.pi, 20))
+            U = sp.lambdify((r, theta), Fr.subs(phi, 0))(R, THETA)
+            V = sp.lambdify((r, theta), Ftheta.subs(phi, 0))(R, THETA)
+            U, V = safe_normalize(U, V)
+            ax.quiver(R, THETA, U, V, angles='xy', scale_units='xy', scale=5)
+            ax.set_xlabel('R')
+            ax.set_ylabel('θ')
+            ax.set_xlim(0, 10)
+            ax.set_ylim(0, np.pi)
+        elif plot_type == "Rφ":
+            R, PHI = np.meshgrid(np.linspace(0, 10, 20), np.linspace(0, 2 * np.pi, 20))
+            U = sp.lambdify((r, phi), Fr.subs(theta, np.pi / 2))(R, PHI)
+            W = sp.lambdify((r, phi), Fphi.subs(theta, np.pi / 2))(R, PHI)
+            U, W = safe_normalize(U, W)
+            ax.quiver(R, PHI, U, W)
+            ax.set_xlabel('R')
+            ax.set_ylabel('φ')
+            ax.set_xlim(0, 10)
+            ax.set_ylim(0, 2 * np.pi)
+        elif plot_type == "θφ":
+            THETA, PHI = np.meshgrid(np.linspace(0, np.pi, 20), np.linspace(0, 2 * np.pi, 20))
+            V = sp.lambdify((theta, phi), Ftheta.subs(r, 5))(THETA, PHI)
+            W = sp.lambdify((theta, phi), Fphi.subs(r, 5))(THETA, PHI)
+            V, W = safe_normalize(V, W)
+            ax.quiver(THETA, PHI, V, W)
+            ax.set_xlabel('θ')
+            ax.set_ylabel('φ')
+            ax.set_xlim(0, np.pi)
+            ax.set_ylim(0, 2 * np.pi)
 
+       
     def save_plot(self):
         if (self.current_mode == 'move'):
             self.toolbar.pan()
